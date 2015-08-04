@@ -1,0 +1,5 @@
+Node Pong
+
+This is a multi-player version of Pong meant to run as a full-screen game on any [HTML5-supporting] browser.
+
+Upon game load, the player can choose between joining an ID-specific game or to play a random person. If an ID-specific game is chosen and the ID given is not currently active, that game is created and the player waits for another player to enter that ID. (For example, a friend.) For the random games, the player waits ofr another random player to join.

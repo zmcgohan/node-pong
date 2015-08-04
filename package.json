@@ -1,0 +1,10 @@
+{
+  "name": "node-pong",
+  "description": "A multiplayer recreation of Pong for the browser.",
+  "version": "0.0.1",
+  "repository": "https://github.com/zmcgohan/node-pong.git",
+  "dependencies": {
+    "express": "^4.13.3",
+    "socket.io": "^1.3.6"
+  }
+}
