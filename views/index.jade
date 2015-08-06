@@ -1,8 +1,10 @@
 doctype html
 html(lang='en')
 	head
-		meta(name='viewport', content='width=device-width, initial-scale=1')
-		title Multiplayer Pong
+		meta(name='viewport', content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no')
+		meta(name='apple-mobile-web-app-capable', content='yes')
+		title Simply Pong: Multiplayer Pong in your browser (works on desktop & mobile)
+		link(rel='icon', href='/static/images/favicon.png', type='image/png')
 		link(rel='stylesheet', href='/static/css/main.css')
 	body
 		#content
@@ -19,6 +21,9 @@ html(lang='en')
 				img#ballImg(src='/static/images/ball.png', style='display:none')
 			canvas#mainCanvas
 		#landscapeWarning
+		#bottomLeftFooter Made by Zach McGohan
+		#bottomRightFooter 
+			a(href='https://github.com/zmcgohan/node-pong') Code hosted on GitHub
 		script(src='/socket.io/socket.io.js')
 		script(src='/static/js/game.js')
 		script(src='/static/js/start_screen.js')

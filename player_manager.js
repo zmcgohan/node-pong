@@ -1,8 +1,8 @@
-var utility = require('./utility_functions.js');
+var getRandomId = require('./utility_functions.js').getRandomId;
 
 /* Represents a single Pong player. */
 function Player(playerNum) {
-	this.id = utility.getRandomId();
+	this.id = getRandomId();
 	this.name = 'User ' + playerNum;
 }
 

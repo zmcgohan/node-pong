@@ -30,6 +30,7 @@ StartScreen.prototype.addEventListeners = function() {
 		var selection = window.getSelection(),
 			range = document.createRange();
 		this.usernameText.contentEditable = true;
+		this.usernameText.focus();
 		range.selectNodeContents(this.usernameText);
 		selection.removeAllRanges();
 		selection.addRange(range);
@@ -40,13 +41,13 @@ StartScreen.prototype.addEventListeners = function() {
 		document.activeElement.blur();
 		this.usernameText.contentEditable = false;
 		selection.removeAllRanges();
-		if(this.usernameText.innerText.length === 0) this.usernameText.innerText = username; // no username entered? revert back to what it was
-		this.usernameText.innerText = this.usernameText.innerText.trim(); // remove spaces on either side
+		if(this.usernameText.textContent.length === 0) this.usernameText.textContent = username; // no username entered? revert back to what it was
+		this.usernameText.textContent = this.usernameText.textContent.trim(); // remove spaces on either side
 	}
 	// if username in text isn't the same as currently set username, request change from server
 	function updateUsername() {
-		if(this.usernameText.innerText !== username)
-			requestUsername(this.usernameText.innerText);
+		if(this.usernameText.textContent !== username)
+			requestUsername(this.usernameText.textContent);
 	}
 	// only allow alphanumeric and spaces, only up to length 20
 	this.usernameText.onkeydown = (function(event) {
@@ -56,7 +57,7 @@ StartScreen.prototype.addEventListeners = function() {
 			document.activeElement.blur();
 		} else if(which !== BACKSPACE && which !== SPACE && which !== LEFT_ARROW && which !== RIGHT_ARROW && !(which >= 65 && which <= 90) && !(which >= 48 && which <= 57)) { // disallowed chars -- stop them
 			event.preventDefault();
-		} else if(this.usernameText.innerText.length >= MAX_USERNAME_LENGTH && (which === SPACE || (which >= 65 && which <= 90) || (which >= 48 && which <= 57))) { // don't allow more than MAX_USERNAME_LENGTH chars
+		} else if(this.usernameText.textContent.length >= MAX_USERNAME_LENGTH && (which === SPACE || (which >= 65 && which <= 90) || (which >= 48 && which <= 57))) { // don't allow more than MAX_USERNAME_LENGTH chars
 			event.preventDefault();
 		}
 	}).bind(this);
@@ -81,5 +82,5 @@ StartScreen.prototype.hide = function() {
 
 /* Updates the displayed username. */
 StartScreen.prototype.updateUsername = function() {
-	this.usernameText.innerText = username;
+	this.usernameText.textContent = username;
 }

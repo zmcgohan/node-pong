@@ -46,6 +46,12 @@ function addWindowListeners() {
 	window.onresize = function() {
 		correctCanvasSize();
 	}
+	/* TODO figure out how to make it always line up correctly in Safari
+	// cancel any scrolls (esp. mobile -- Safari at least adds a bar which messes with screen size)
+	var preventDefault = function(e) { e.preventDefault(); };
+	window.onwheel = preventDefault;
+	window.ontouchmove = preventDefault;
+	*/
 	// on connection, receive username
 	io.on('connect', function() {
 		console.log('Connected to server.');

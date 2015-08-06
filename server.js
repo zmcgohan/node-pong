@@ -17,8 +17,8 @@ app.get('/', function(req, res) {
 });
 
 // new user connected to game server
-var playerMgr = require('./player_manager.js');
-playerMgr = new playerMgr.PlayerManager();
+var playerMgr = new (require('./player_manager.js').PlayerManager)(),
+	gameMgr = new (require('./game_manager.js').GameManager)();
 io.on('connection', function(socket) {
 	socket.player = playerMgr.addPlayer(); // set player identity to socket
 	console.log(socket.player.name + ' connected (Total players: ' + playerMgr.numPlayers + ')');

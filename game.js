@@ -1,8 +1,10 @@
+var getRandomId = require('./utility_functions.js').getRandomId;
+
 /* Represents a single Pong game. */
 function Game(id) {
 	this.id = id || getRandomId();
 	this.players = [];
-	this.ball = new Ball();
+	//this.ball = new Ball();
 }
 
 /* Adds a Player to the Game. */
@@ -19,3 +21,5 @@ Game.prototype.removePlayer = function(player) {
 			this.players.splice(i, 1);
 	}
 }
+
+exports.Game = Game;
