@@ -1,0 +1,108 @@
+@font-face {
+	font-family: PressStart;
+	src: url(/static/fonts/PrStart.ttf);
+}
+* {
+	box-sizing: border-box;
+	cursor: default;
+}
+html, body {
+	width: 100%; 
+	height: 100%;
+	padding: 0;
+	margin: 0;
+	overflow: hidden;
+	font-family: PressStart, Helvetica;
+	font-size: 2vmax;
+	color: #fcfcfc;
+}
+#mainCanvas { 
+	position: absolute; top: 0; left: 0;
+	background: #1c1c1c;
+	z-index: -1;
+}
+#content, #gameContainer {
+	position: absolute; top: 0; left: 0;
+	width: 100%;
+	height: 100%;
+}
+
+/* START SCREEN */
+#startScreenContainer { 
+	position: absolute;
+	width: 50%; height: 80%;
+	display: block; 
+	top: 0; bottom: 0;
+	left: 0; right: 0;
+	margin: auto;
+}
+	#startScreenHeader {
+		font-size: 250%;
+		margin-bottom: 7%;
+		letter-spacing: 9px;
+		width: 100%;
+		text-align: center;
+	}
+	#username {
+		margin-bottom: 7%;
+		font-size: 90%;
+		width: 100%;
+		text-align: center;
+	}
+		#usernameText {
+			position: relative;
+			outline: none;
+			cursor: text;
+		}
+		#usernameChangeButton {
+			margin-left: 1.0vmax;
+			width: 1.6vmax;
+			height: 1.6vmax;
+			border: none;
+			cursor: pointer;
+			opacity: 0.15;
+		}
+		#usernameChangeButton:hover { opacity: 0.6; }
+	.gameButton {
+		padding: 2vmax;
+		margin-bottom: 7%;
+		line-height: 125%;
+		width: 100%;
+		border: 2px solid #fcfcfc;
+		cursor: pointer;
+	}
+	.gameButton:hover {
+		border-color: #59acff;
+		color: #59acff;
+	}
+		#playRandomButton { top: 0; }
+		#playFriendButton { bottom: 0; }
+
+/* GAME SCREEN */
+#gameContainer { display: none; }
+	.scoreText {
+		width: 10vmax;
+		text-align: center;
+		top: 3vh;
+		font-size: 150%;
+	}
+	#playerOneScore {
+		left: 40vmax;
+	}
+	#playerTwoScore {
+		right: 39.5vmax;
+	}
+
+/* If in portrait mode, tell the user to switch to landscape. */
+/* TODO implement -- not important right now */
+#landscapeWarning { display: none; }
+/*
+@media (orientation:portrait) {
+	#landscapeWarning { display: block; }
+	#content { display: none; }
+}
+@media (orientation:landscape) {
+	#landscapeWarning { display: none; }
+	#content { display: block; }
+}
+*/

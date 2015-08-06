@@ -1,0 +1,25 @@
+doctype html
+html(lang='en')
+	head
+		meta(name='viewport', content='width=device-width, initial-scale=1')
+		title Multiplayer Pong
+		link(rel='stylesheet', href='/static/css/main.css')
+	body
+		#content
+			#startScreenContainer
+				h1#startScreenHeader PONG
+				h2#username Username:&nbsp;
+					span#usernameText User #
+					img#usernameChangeButton(src='/static/images/pencil.png')
+				#playRandomButton.gameButton Play against random
+				#playFriendButton.gameButton Play against a friend
+			#gameContainer
+				#playerOneScore.scoreText 0
+				#playerTwoScore.scoreText 0
+				img#ballImg(src='/static/images/ball.png', style='display:none')
+			canvas#mainCanvas
+		#landscapeWarning
+		script(src='/socket.io/socket.io.js')
+		script(src='/static/js/game.js')
+		script(src='/static/js/start_screen.js')
+		script(src='/static/js/main.js')
