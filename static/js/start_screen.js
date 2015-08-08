@@ -18,14 +18,10 @@ StartScreen.prototype.addEventListeners = function() {
 	// start search for a random game
 	this.playRandomButton.onclick = (function() {
 		requestGame();
-		this.hide();
-		game.show();
 	}).bind(this);
 	// allow for creation or joining of an ID'ed game
 	this.playFriendButton.onclick = (function() {
 		requestGame('zmcgohan');
-		this.hide();
-		game.show();
 	}).bind(this);
 	// allow changing of username
 	this.usernameChangeButton.onclick = (function() {

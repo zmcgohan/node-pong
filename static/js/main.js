@@ -67,6 +67,7 @@ function addWindowListeners() {
 	// when page resized, update page accordingly
 	window.onresize = function() {
 		correctCanvasSize();
+		game.fullUpdate();
 	}
 	/* TODO figure out how to make it always line up correctly in Safari
 	// cancel any scrolls (esp. mobile -- Safari at least adds a bar which messes with screen size)
@@ -92,10 +93,15 @@ function addWindowListeners() {
 		console.log('Username set to ' + username);
 	});
 	io.on('game-request', function(data) {
-		console.log('Received game data');
+		if(data.success) {
+			console.log('Successfully joined game.');
+		}
 	});
-	io.on('countdown-start', function(data) {
-		console.log('Countdown started.');
+	io.on('board-data', function(data) {
+		console.log('Received board data.');
+		game.updateFromData(data);
+		startScreen.hide();
+		game.show();
 	});
 	io.on('countdown', function(data) { // on receiving current countdown time
 	});

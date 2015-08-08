@@ -1,4 +1,7 @@
 var BOARD_SIZE = [ 200, 100 ],
+	PADDLE_DIMENSIONS = [ 2, 10 ],
+	PADDLE_PADDING = 4,
+	BALL_RADIUS = 1.5,
 	COUNTDOWN_SECONDS = 3.0,
 	COUNTDOWN_DECREMENT_STEP = 0.2;
 
@@ -9,9 +12,8 @@ function Game() {
 	this.players = [];
 	this.scores = [ 0, 0 ];
 	this.secondsForCountdown = COUNTDOWN_SECONDS; // how long (in seconds) the countdown before a game is
-	this.playerPositions = [ BOARD_SIZE[1] / 2 ];
-	this.playerPositions.push(this.playerPositions[0]);
-	this.ballPos = [ BOARD_SIZE[0] / 2, BOARD_SIZE[1] / 2 ];
+	this.playerPositions = [ 50, 50 ];
+	this.ballPos = [ 100, 50 ];
 	//this.ball = new Ball();
 	this.gameCountdown = this.gameCountdown.bind(this);
 	this.gameLoop = this.gameLoop.bind(this);
@@ -22,7 +24,22 @@ Game.prototype.addPlayer = function(player) {
 	if(this.players.length < 2) 
 		this.players.push(player);
 	player.socket.emit('game-request', { success: true });
+	this.sendBoardToPlayer(player); // send default board info to player
 	this.removeDisconnectedPlayers();
+}
+
+/* Sends all necessary board info to player. (Dimensions, starting scores, etc.) */
+Game.prototype.sendBoardToPlayer = function(player) {
+	var data;
+	data = {
+		boardSize: BOARD_SIZE,
+		paddleDimensions: PADDLE_DIMENSIONS,
+		paddlePadding: PADDLE_PADDING,
+		ballRadius: BALL_RADIUS,
+		playerPositions: this.playerPositions,
+		ballPos: this.ballPos
+	};
+	player.socket.emit('board-data', data);
 }
 
 /* Removes any disconnected players from the Game.
@@ -31,22 +48,20 @@ Game.prototype.addPlayer = function(player) {
 Game.prototype.removeDisconnectedPlayers = function() {
 	var i;
 	for(i = 0; i < this.players.length; ++i) {
-		if(!this.players[i].socket.connected)
+		if(!this.players[i].socket.connected) {
+			console.log('Player ' + i + ' disconnected.');
 			return i;
+		}
 	}
 	return -1;
 }
 
 /* Starts the game if it's ready. */
 Game.prototype.startIfReady = function() {
-	var i, data;
+	var i;
 	if(this.players.length < 2) return;
 	console.log('Starting game: ' + this.players[0].name + ' vs. ' + this.players[1].name);
-	// send message that game's starting
-	for(i = 0; i < this.players.length; ++i) {
-		this.players[i].socket.emit('countdown-start', { players: [ this.players[0].name, this.players[1].name ] });
-	}
-	setTimeout(this.gameCountdown, COUNTDOWN_DECREMENT_STEP * 1000);
+	setTimeout(this.gameCountdown, COUNTDOWN_DECREMENT_STEP * 1000); // start countdown
 }
 
 /* Removes a Player from the Game. */
@@ -79,8 +94,9 @@ Game.prototype.gameLoop = function() {
 	// check for any disconnected players -- if any have, alert the other
 	disconnectedPlayerI = this.removeDisconnectedPlayers();
 	if(disconnectedPlayerI !== -1) { // player left the game
-		console.log(this.players[disconnectedPlayerI].name + ' quit the game against ' + this.players[(disconnectedPlayerI + 1) % 2].name);
-		this.players[0].socket.emit('player-quit-game-end', null);
+		var otherPlayerI = (disconnectedPlayerI + 1) % 2;
+		console.log(this.players[disconnectedPlayerI].name + ' quit the game against ' + this.players[otherPlayerI].name);
+		this.players[otherPlayerI].socket.emit('player-quit-game-end', null);
 		return;
 	}
 	// send game updates
