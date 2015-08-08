@@ -1,8 +1,9 @@
 var getRandomId = require('./utility_functions.js').getRandomId;
 
 /* Represents a single Pong player. */
-function Player(playerNum) {
+function Player(playerNum, socket) {
 	this.id = getRandomId();
+	this.socket = socket;
 	this.name = 'User ' + playerNum;
 }
 
@@ -17,8 +18,8 @@ Object.defineProperty(PlayerManager.prototype, 'numPlayers', {
 });
 
 /* Adds a player to the list of Pong players and returns that new Player object. */
-PlayerManager.prototype.addPlayer = function() {
-	var newPlayer = new Player(this.onPlayerNum++);
+PlayerManager.prototype.addPlayer = function(socketId) {
+	var newPlayer = new Player(this.onPlayerNum++, socketId);
 	this.players.push(newPlayer);
 	return newPlayer;
 }

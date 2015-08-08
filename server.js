@@ -20,7 +20,7 @@ app.get('/', function(req, res) {
 var playerMgr = new (require('./player_manager.js').PlayerManager)(),
 	gameMgr = new (require('./game_manager.js').GameManager)();
 io.on('connection', function(socket) {
-	socket.player = playerMgr.addPlayer(); // set player identity to socket
+	socket.player = playerMgr.addPlayer(socket); // set player identity to socket
 	console.log(socket.player.name + ' connected (Total players: ' + playerMgr.numPlayers + ')');
 	socket.emit('username-set', { username: socket.player.name }); // send player their default username
 	socket.on('disconnect', function() {
@@ -43,6 +43,7 @@ io.on('connection', function(socket) {
 		} else {
 			console.log('\t' + socket.player.name + ' is requesting an ID game');
 		}
+		gameMgr.addPlayerToGame(socket.player, data.id);
 	});
 });
 

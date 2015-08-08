@@ -1,7 +1,8 @@
 /* NOTE: Application is small. It's written very procedurally in some areas (which, really, is MUCH easier for refactoring if I need to). Don't judge me pls. */
 
 var AR = 2, // aspect ratio for canvas (makes it not blurry)
-	MAX_USERNAME_LENGTH = 15;
+	MAX_USERNAME_LENGTH = 15,
+	COOKIE_EXPIRATION_DAYS = 365;
 
 var canvas, ctx; // main canvas
 var io = io(); // socket.io object
@@ -9,7 +10,7 @@ var io = io(); // socket.io object
 // create main start screen and game objects (they handle all their own stuff)
 var startScreen = new StartScreen(),
 	game = new Game();
-var username = null;
+var username = getUsernameCookie();
 
 /* Set up the main canvas and its context. */
 function setUp() {
@@ -31,6 +32,27 @@ function requestUsername(username) {
 	data = username !== undefined ? { username: username } : null;
 	//if(data) console.log('Sending request to change username to "' + data.username + '."');
 	io.emit('username-request', data);
+}
+
+/* Sets a cookie for username -- on return visits, no need to re-enter it. */
+function setUsernameCookie() {
+	var expireTime = new Date(), expireStr;
+	expireTime.setTime(expireTime.getTime() + COOKIE_EXPIRATION_DAYS*24*60*60*1000);
+	expireStr = 'expires=' + expireTime.toUTCString();
+	document.cookie = 'username=' + username + '; ' + expireStr;
+}
+
+/* If the username cookie exists, returns the username. If not, returns null. */
+function getUsernameCookie() {
+	var cookiePos = document.cookie.indexOf('username=') + 'username='.length,
+		endPos;
+	if(cookiePos !== -1) {
+		endPos = document.cookie.indexOf(';', cookiePos);
+		if(endPos === -1) return document.cookie.substring(cookiePos);
+		else return document.cookie.substring(cookiePos, endPos);
+	} else {
+		return null;
+	}
 }
 
 /* Requests a new game. If id is set, it's a game against a friend - if not, random game. */
@@ -55,7 +77,7 @@ function addWindowListeners() {
 	// on connection, receive username
 	io.on('connect', function() {
 		console.log('Connected to server.');
-		requestUsername();
+		requestUsername(username);
 	});
 	// on disconnection -- error
 	io.on('disconnect', function() {
@@ -65,10 +87,25 @@ function addWindowListeners() {
 	io.on('username-request', function(data) {
 		username = data.username;
 		startScreen.updateUsername();
+		if(!/^User \d+$/.test(username)) // not-default username set -- set a cookie for saving username
+			setUsernameCookie();
 		console.log('Username set to ' + username);
 	});
 	io.on('game-request', function(data) {
 		console.log('Received game data');
+	});
+	io.on('countdown-start', function(data) {
+		console.log('Countdown started.');
+	});
+	io.on('countdown', function(data) { // on receiving current countdown time
+	});
+	io.on('game-start', function(data) { // game is starting
+		console.log('Game started.');
+	});
+	io.on('game-update', function(data) { // current game position updates
+	});
+	io.on('player-quit-game-end', function(data) {
+		console.log('Other player quit. Game over.');
 	});
 }
 

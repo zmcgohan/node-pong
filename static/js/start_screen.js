@@ -4,6 +4,8 @@ function StartScreen() {
 	this.usernameChangeButton = document.getElementById('usernameChangeButton');
 	this.playRandomButton = document.getElementById('playRandomButton');
 	this.playFriendButton = document.getElementById('playFriendButton');
+	this.bottomLeftFooter = document.getElementById('bottomLeftFooter');
+	this.bottomRightFooter = document.getElementById('bottomRightFooter');
 
 	// vertically center
 	//this.container.height = this.container.offsetHeight;
@@ -71,6 +73,7 @@ StartScreen.prototype.addEventListeners = function() {
 /* Display start screen and clear canvas. */
 StartScreen.prototype.show = function() {
 	this.container.style.display = 'block';
+	this.bottomLeftFooter.style.display = this.bottomRightFooter.style.display = 'block';
 	game.hide();
 	ctx.clearRect(0,0,canvas.width,canvas.height);
 }
@@ -78,6 +81,7 @@ StartScreen.prototype.show = function() {
 /* Hide start screen. */
 StartScreen.prototype.hide = function() {
 	this.container.style.display = 'none';
+	this.bottomLeftFooter.style.display = this.bottomRightFooter.style.display = 'none';
 }
 
 /* Updates the displayed username. */

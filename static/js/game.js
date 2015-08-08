@@ -29,7 +29,6 @@ Game.prototype.fullUpdate = function() {
 /* Shows the game components. */
 Game.prototype.show = function() {
 	this.container.style.display = 'block';
-	this.fullUpdate();
 }
 
 /* Hides the game components. */
