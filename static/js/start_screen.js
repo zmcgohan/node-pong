@@ -70,7 +70,7 @@ StartScreen.prototype.addEventListeners = function() {
 StartScreen.prototype.show = function() {
 	this.container.style.display = 'block';
 	this.bottomLeftFooter.style.display = this.bottomRightFooter.style.display = 'block';
-	game.hide();
+	if(game) game.hide();
 	ctx.clearRect(0,0,canvas.width,canvas.height);
 }
 

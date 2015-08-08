@@ -4,6 +4,7 @@ var getRandomId = require('./utility_functions.js').getRandomId;
 function Player(playerNum, socket) {
 	this.id = getRandomId();
 	this.socket = socket;
+	this.game = null; // current game they're in
 	this.name = 'User ' + playerNum;
 }
 

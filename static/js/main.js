@@ -2,14 +2,16 @@
 
 var AR = 2, // aspect ratio for canvas (makes it not blurry)
 	MAX_USERNAME_LENGTH = 15,
-	COOKIE_EXPIRATION_DAYS = 365;
+	COOKIE_EXPIRATION_DAYS = 365,
+	UP_ARROW_KEY = 38, DOWN_ARROW_KEY = 40;
 
 var canvas, ctx; // main canvas
 var io = io(); // socket.io object
 
 // create main start screen and game objects (they handle all their own stuff)
 var startScreen = new StartScreen(),
-	game = new Game();
+	game;
+
 var username = getUsernameCookie();
 
 /* Set up the main canvas and its context. */
@@ -67,7 +69,7 @@ function addWindowListeners() {
 	// when page resized, update page accordingly
 	window.onresize = function() {
 		correctCanvasSize();
-		game.fullUpdate();
+		if(game) game.fullUpdate();
 	}
 	/* TODO figure out how to make it always line up correctly in Safari
 	// cancel any scrolls (esp. mobile -- Safari at least adds a bar which messes with screen size)
@@ -95,6 +97,7 @@ function addWindowListeners() {
 	io.on('game-request', function(data) {
 		if(data.success) {
 			console.log('Successfully joined game.');
+			game = new Game();
 		}
 	});
 	io.on('board-data', function(data) {
@@ -103,12 +106,14 @@ function addWindowListeners() {
 		startScreen.hide();
 		game.show();
 	});
-	io.on('countdown', function(data) { // on receiving current countdown time
-	});
-	io.on('game-start', function(data) { // game is starting
-		console.log('Game started.');
+	io.on('round-start', function(data) { // game is starting
+		game.countdownLeft = 0;
+		console.log('Round started.');
+		game.startGame();
 	});
 	io.on('game-update', function(data) { // current game position updates
+		game.updateFromData(data);
+		game.fullUpdate();
 	});
 	io.on('player-quit-game-end', function(data) {
 		console.log('Other player quit. Game over.');

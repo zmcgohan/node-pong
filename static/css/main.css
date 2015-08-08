@@ -81,6 +81,18 @@ body { background: #1c1c1c; }
 
 /* GAME SCREEN */
 #gameContainer { display: none; }
+	#countdownText {
+		display: none;
+		position: absolute;
+		font-size: 300%;
+		height: 5vh;
+		line-height: 5vh;
+		width: 5vw;
+		text-align: center;
+		top: 0; bottom: 0;
+		left: 0; right: 0;
+		margin: auto;
+	}
 	.scoreText {
 		position: absolute;
 		top: 2vh;
@@ -92,6 +104,13 @@ body { background: #1c1c1c; }
 	#playerTwoScore {
 		right: calc(50vw - 2.5em - 2.5px);
 	}
+	.nameText {
+		position: absolute;
+		top: 2.5vh;
+		font-size: 70%;
+	}
+	#playerOneName { left: 4vw; }
+	#playerTwoName { right: 4vw; }
 
 /* If in portrait mode, tell the user to switch to landscape. */
 /* TODO implement -- not important right now */

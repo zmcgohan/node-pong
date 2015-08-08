@@ -3,37 +3,70 @@ function Game() {
 	// DOM elements
 	this.container = document.getElementById('gameContainer');
 	this.ballImg = document.getElementById('ballImg');
+	this.nameTexts = [ document.getElementById('playerOneName'), document.getElementById('playerTwoName') ];
 	this.scoreTexts = [ document.getElementById('playerOneScore'), document.getElementById('playerTwoScore') ];
+	this.countdownText = document.getElementById('countdownText');
 
 	// game variables
+	this.lastUpdateTime = null;
+	this.playerI = null; // which player is this client? 0 or 1
 	this.boardSize = null;
 	this.paddleDimensions = null;
 	this.paddlePadding = null;
 	this.ballRadius = null;
+	this.basePaddleVelocity = null; // velocity at which players move
 	this.playerNames = null;
 	this.playerPositions = [ 50, 50 ];
+	this.playerVelocities = [ 0, 0 ];
 	this.playerScores = [ 0, 0 ];
 	this.ballPos = [ 100, 50 ];
+	this.ballVelocity = 0;
+	this.ballAngle = 0;
+
+	this.gameLoop = this.gameLoop.bind(this);
 
 	this.addEventListeners();
 }
 
 /* Adds all necessary events, including DOM and socket.io. */
 Game.prototype.addEventListeners = function() {
-	io.on('looking-for-game', function(data) {
-		if(data.success) {
-			console.log('Joined game.');
+	// handle key down events
+	window.onkeydown = (function(event) {
+		var keyCode = event.which || event.keyCode;
+		if(keyCode === UP_ARROW_KEY) {
+			this.playerVelocities[this.playerI] = -this.basePaddleVelocity;
+			io.emit('movement', { direction: -1 });
+		} else if(keyCode === DOWN_ARROW_KEY) {
+			this.playerVelocities[this.playerI] = this.basePaddleVelocity;
+			io.emit('movement', { direction: 1 });
 		}
-	});
+	}).bind(this);
+	// handle key up events
+	window.onkeyup = (function(event) {
+		var keyCode = event.which || event.keyCode;
+		console.log(this.playerI);
+		if(keyCode === UP_ARROW_KEY) {
+			console.log('Stopping movement.');
+			this.playerVelocities[this.playerI] = 0;
+			io.emit('movement', { direction: 0, position: this.playerPositions[this.playerI] });
+		} else if(keyCode === DOWN_ARROW_KEY) {
+			console.log('Stopping movement.');
+			this.playerVelocities[this.playerI] = 0;
+			io.emit('movement', { direction: 0, position: this.playerPositions[this.playerI] });
+		}
+	}).bind(this);
 }
 
 /* Fully updates screen for game. */
 Game.prototype.fullUpdate = function() {
+	// clear screen
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	// update each component of board
 	this.drawDividerLine();
 	this.drawBall();
 	this.drawPaddles();
 	this.updateScores();
-	this.updatePlayerNames();
+	this.updateCountdown();
 }
 
 /* Shows the game components. */
@@ -45,6 +78,38 @@ Game.prototype.show = function() {
 /* Hides the game components. */
 Game.prototype.hide = function() {
 	this.container.style.display = 'none';
+}
+
+/* Updates the countdown text before a game begins. */
+Game.prototype.updateCountdown = function() {
+	if(this.countdownLeft > 0) {
+		this.countdownText.style.display = 'block';
+		this.countdownText.textContent = Math.ceil(this.countdownLeft);
+	} else { 
+		this.countdownText.style.display = 'none';
+	}
+}
+
+/* Starts the game. Countdown over, game beginning. */
+Game.prototype.startGame = function() {
+	this.lastUpdateTime = (new Date()).getTime();
+	requestAnimationFrame(this.gameLoop);
+}
+
+/* Local game loop. Predicts ball and paddle movement for smooth play. When receiving data, changes must keep smooth play. */
+Game.prototype.gameLoop = function() {
+	var secondsElapsed = ((new Date()).getTime() - this.lastUpdateTime) / 1000;
+	if(this.countdownLeft === 0) {
+		this.ballPos[0] += Math.cos(this.ballAngle) * this.ballVelocity * (this.boardSize[0]/this.boardSize[1]) * secondsElapsed;
+		this.ballPos[1] += Math.sin(this.ballAngle) * this.ballVelocity * secondsElapsed;
+		this.playerPositions[0] += this.playerVelocities[0] * secondsElapsed;
+		this.playerPositions[1] += this.playerVelocities[1] * secondsElapsed;
+	}
+
+	this.fullUpdate();
+
+	this.lastUpdateTime = (new Date()).getTime();
+	requestAnimationFrame(this.gameLoop);
 }
 
 /* Draws the pong ball. */
@@ -94,30 +159,28 @@ Game.prototype.updateScores = function() {
 
 /* Updates the players' names. */
 Game.prototype.updatePlayerNames = function() {
+	this.nameTexts[0].textContent = this.players[0];
+	this.nameTexts[1].textContent = this.players[1];
 }
 
 /* Update Game's variables from server data. */
 Game.prototype.updateFromData = function(data) {
-	if(data.playerPositions) {
-		this.playerPositions = data.playerPositions;
-	}
-	if(data.ballPos) {
-		this.ballPos = data.ballPos;
-	}
 	if(data.players) {
 		this.players = data.players;
+		this.updatePlayerNames();
 	}
-	if(data.boardSize) {
-		this.boardSize = data.boardSize;
-	}
-	if(data.paddleDimensions) {
-		this.paddleDimensions = data.paddleDimensions;
-	}
-	if(data.paddlePadding) {
-		this.paddlePadding = data.paddlePadding;
-	}
-	if(data.ballRadius) {
-		this.ballRadius = data.ballRadius;
-	}
+	if(data.countdownLeft !== undefined) this.countdownLeft = data.countdownLeft;
+	if(data.playerI !== undefined) this.playerI = data.playerI;
+	if(data.playerPositions) this.playerPositions = data.playerPositions;
+	if(data.playerVelocities) this.playerVelocities = data.playerVelocities;
+	if(data.ballPos) this.ballPos = data.ballPos;
+	if(data.ballVelocity !== undefined) this.ballVelocity = data.ballVelocity;
+	if(data.ballAngle !== undefined) this.ballAngle = data.ballAngle;
+	if(data.boardSize) this.boardSize = data.boardSize;
+	if(data.basePaddleVelocity) this.basePaddleVelocity = data.basePaddleVelocity;
+	if(data.paddleDimensions) this.paddleDimensions = data.paddleDimensions;
+	if(data.paddlePadding !== undefined) this.paddlePadding = data.paddlePadding;
+	if(data.ballRadius) this.ballRadius = data.ballRadius;
+	if(data.playerScores) this.playerScores = data.playerScores;
 	this.fullUpdate(); // redraw
 }
