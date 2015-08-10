@@ -26,6 +26,7 @@ io.on('connection', function(socket) {
 	// user disconnected from server
 	socket.on('disconnect', function() {
 		playerMgr.removePlayer(socket.player);
+		if(socket.player.game) socket.player.game.handleDisconnectedPlayer(socket.player); // if player is in a game, end it
 		console.log(socket.player.name + ' disconnected (Total players remaining: ' + playerMgr.numPlayers + ')');
 	});
 	// user pinging the server
@@ -36,6 +37,11 @@ io.on('connection', function(socket) {
 		if(isRandomGame) console.log('\t' + socket.player.name + ' is requesting a random game');
 		else console.log('\t' + socket.player.name + ' is requesting an ID game');
 		gameMgr.addPlayerToGame(socket.player, data.id);
+	});
+	// game time update received
+	socket.on('time-update', function(data) {
+		if(socket.player.game)
+			socket.player.game.handleTimeUpdate(socket.player, data);
 	});
 });
 

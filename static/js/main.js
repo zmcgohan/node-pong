@@ -85,7 +85,7 @@ function addWindowListeners() {
 	// when page resized, update page accordingly
 	window.onresize = function() {
 		correctCanvasSize();
-		if(game) game.fullUpdate();
+		if(game) game.render();
 	}
 	/* TODO figure out how to make it always line up correctly in Safari
 	// cancel any scrolls (esp. mobile -- Safari at least adds a bar which messes with screen size)
@@ -114,29 +114,34 @@ function addWindowListeners() {
 			setUsernameCookie();
 		console.log('Username set to ' + username);
 	});
-	io.on('game-request', function(data) {
-		if(data.success) {
-			console.log('Successfully joined game.');
-			game = new Game();
-		}
-	});
-	io.on('board-data', function(data) {
-		console.log('Received board data.');
-		game.updateFromData(data);
+	// received details of game -- doubles as a 'success' for game requests
+	io.on('game-details', function(data) {
+		console.log('Successfully joined game and received details.');
+		game = new Game(data);
 		startScreen.hide();
 		game.show();
 	});
-	io.on('round-start', function(data) { // game is starting
-		game.countdownLeft = 0;
-		console.log('Round started.');
-		game.startGame();
+	// two players now in game -- ready to play
+	io.on('game-ready', function(data) {
+		console.log('Game is ready.');
+		game.playerNames = data.playerNames;
+		game.updateNameTexts();
 	});
-	io.on('game-update', function(data) { // current game position updates
-		game.updateFromData(data);
-		game.fullUpdate();
+	// round is starting -- begin countdown 
+	io.on('round-start', function(data) {
+		game.startRound();
+	});
+	// received time update from other player
+	io.on('time-update', function(time) {
+		game.addReceivedTime(time);
+	});
+	// current game position updates
+	io.on('game-update', function(data) { 
 	});
 	io.on('player-quit-game-end', function(data) {
 		console.log('Other player quit. Game over.');
+		game.hide();
+		startScreen.show();
 	});
 }
 
