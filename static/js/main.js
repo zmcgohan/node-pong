@@ -1,12 +1,13 @@
-/* NOTE: Application is small. It's written very procedurally in some areas (which, really, is MUCH easier for refactoring if I need to). Don't judge me pls. */
-
 var AR = 2, // aspect ratio for canvas (makes it not blurry)
 	MAX_USERNAME_LENGTH = 15,
 	COOKIE_EXPIRATION_DAYS = 365,
-	UP_ARROW_KEY = 38, DOWN_ARROW_KEY = 40;
+	UP_ARROW_KEY = 38, DOWN_ARROW_KEY = 40,
+	PING_UPDATE_INTERVAL = 1000;
 
 var canvas, ctx; // main canvas
-var io = io(); // socket.io object
+
+var io = io(), // socket.io object
+	ping, pingTimeout; // ping between server and client
 
 // create main start screen and game objects (they handle all their own stuff)
 var startScreen = new StartScreen(),
@@ -20,6 +21,21 @@ function setUp() {
 	ctx = canvas.getContext('2d');
 	correctCanvasSize();
 }
+
+/* Retrieves ping between client and server every PING_UPDATE_INTERVAL ms. */
+var updatePing = (function() {
+	var pingStart = null;
+	return function() {
+		if(pingStart === null) {
+			io.emit('ping', null);
+			pingStart = (new Date()).getTime();
+		} else {
+			ping = (new Date()).getTime() - pingStart;
+			pingStart = null;
+			pingTimeout = setTimeout(updatePing, PING_UPDATE_INTERVAL);
+		}
+	}
+})();
 
 /* Sizes the main canvas correctly. */
 function correctCanvasSize() {
@@ -81,11 +97,15 @@ function addWindowListeners() {
 	io.on('connect', function() {
 		console.log('Connected to server.');
 		requestUsername(username);
+		updatePing();
 	});
 	// on disconnection -- error
 	io.on('disconnect', function() {
 		console.log('Disconnected from server.');
+		if(pingTimeout) clearTimeout(pingTimeout);
 	});
+	// on ping response
+	io.on('pong', updatePing);
 	// on receiving default username
 	io.on('username-request', function(data) {
 		username = data.username;

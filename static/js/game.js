@@ -44,7 +44,6 @@ Game.prototype.addEventListeners = function() {
 	// handle key up events
 	window.onkeyup = (function(event) {
 		var keyCode = event.which || event.keyCode;
-		console.log(this.playerI);
 		if(keyCode === UP_ARROW_KEY) {
 			console.log('Stopping movement.');
 			this.playerVelocities[this.playerI] = 0;
@@ -98,10 +97,35 @@ Game.prototype.startGame = function() {
 
 /* Local game loop. Predicts ball and paddle movement for smooth play. When receiving data, changes must keep smooth play. */
 Game.prototype.gameLoop = function() {
-	var secondsElapsed = ((new Date()).getTime() - this.lastUpdateTime) / 1000;
+	var secondsElapsed = ((new Date()).getTime() - this.lastUpdateTime) / 1000,
+		leftPaddleX, rightPaddleX,
+		newBallX, newBallY, zeroTime, zeroDist, ballYAtHit, paddleYAtHit;
+	leftPaddleX = this.paddlePadding + this.paddleDimensions[0]/2;
+	rightPaddleX = this.boardSize[0] - this.paddlePadding - this.paddleDimensions[0]/2;
 	if(this.countdownLeft === 0) {
-		this.ballPos[0] += Math.cos(this.ballAngle) * this.ballVelocity * (this.boardSize[0]/this.boardSize[1]) * secondsElapsed;
-		this.ballPos[1] += Math.sin(this.ballAngle) * this.ballVelocity * secondsElapsed;
+		// move ball and check for collisions
+		newBallX = this.ballPos[0] + Math.cos(this.ballAngle) * this.ballVelocity * (this.boardSize[0]/this.boardSize[1]) * secondsElapsed;
+		newBallY = this.ballPos[1] - Math.sin(this.ballAngle) * this.ballVelocity * secondsElapsed;
+		if(newBallX - this.ballRadius <= leftPaddleX && this.ballPos[0] - this.ballRadius >= leftPaddleX) { // on left side
+			zeroDist = this.ballPos[0] - this.ballRadius - leftPaddleX;
+			zeroTime = zeroDist / (this.ballVelocity * -Math.cos(this.ballAngle));
+			ballYAtHit = this.ballPos[1] + zeroDist * Math.tan(this.ballAngle);
+			paddleYAtHit = this.playerPositions[0] + this.playerVelocities[0] * zeroTime;
+			if(paddleYAtHit - this.paddleDimensions[1]/2 <= ballYAtHit + this.ballRadius
+					&& paddleYAtHit + this.paddleDimensions[1]/2 >= ballYAtHit - this.ballRadius)
+				console.log('Player 1 hit');
+		} else if(newBallX + this.ballRadius >= rightPaddleX && this.ballPos[0] + this.ballRadius <= rightPaddleX) { // on right side
+			zeroDist = rightPaddleX - this.ballPos[0] - this.ballRadius;
+			zeroTime = zeroDist / (this.ballVelocity * Math.cos(this.ballAngle));
+			ballYAtHit = this.ballPos[1] - zeroDist * Math.tan(this.ballAngle);
+			paddleYAtHit = this.playerPositions[1] + this.playerVelocities[1] * zeroTime;
+			if(paddleYAtHit - this.paddleDimensions[1]/2 <= ballYAtHit + this.ballRadius
+					&& paddleYAtHit + this.paddleDimensions[1]/2 >= ballYAtHit - this.ballRadius)
+				console.log('Player 2 hit');
+		}
+		this.ballPos[0] = newBallX;
+		this.ballPos[1] = newBallY;
+		// update paddle positions
 		this.playerPositions[0] += this.playerVelocities[0] * secondsElapsed;
 		this.playerPositions[1] += this.playerVelocities[1] * secondsElapsed;
 	}
@@ -171,7 +195,10 @@ Game.prototype.updateFromData = function(data) {
 	}
 	if(data.countdownLeft !== undefined) this.countdownLeft = data.countdownLeft;
 	if(data.playerI !== undefined) this.playerI = data.playerI;
-	if(data.playerPositions) this.playerPositions = data.playerPositions;
+	if(data.playerPositions) {
+		if(data.playerPositions[0] !== null) this.playerPositions[0] = data.playerPositions[0];
+		if(data.playerPositions[1] !== null) this.playerPositions[1] = data.playerPositions[1];
+	}
 	if(data.playerVelocities) this.playerVelocities = data.playerVelocities;
 	if(data.ballPos) this.ballPos = data.ballPos;
 	if(data.ballVelocity !== undefined) this.ballVelocity = data.ballVelocity;

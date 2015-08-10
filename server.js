@@ -19,30 +19,22 @@ app.get('/', function(req, res) {
 // new user connected to game server
 var playerMgr = new (require('./player_manager.js').PlayerManager)(),
 	gameMgr = new (require('./game_manager.js').GameManager)();
+
 io.on('connection', function(socket) {
 	socket.player = playerMgr.addPlayer(socket); // set player identity to socket
 	console.log(socket.player.name + ' connected (Total players: ' + playerMgr.numPlayers + ')');
-	socket.emit('username-set', { username: socket.player.name }); // send player their default username
+	// user disconnected from server
 	socket.on('disconnect', function() {
 		playerMgr.removePlayer(socket.player);
 		console.log(socket.player.name + ' disconnected (Total players remaining: ' + playerMgr.numPlayers + ')');
 	});
-	// user is requesting their default username on load
-	socket.on('username-request', function(data) {
-		if(data && data.username.length > 0) {
-			console.log('\t' + socket.player.name + ' changed their name to ' + data.username);
-			socket.player.name = data.username;
-		}
-		socket.emit('username-request', { username: socket.player.name });
-	});
+	// user pinging the server
+	socket.on('ping', function() { socket.emit('pong', null); });
 	// user requesting new game
 	socket.on('game-request', function(data) {
 		var isRandomGame = data.id === null;
-		if(isRandomGame) {
-			console.log('\t' + socket.player.name + ' is requesting a random game');
-		} else {
-			console.log('\t' + socket.player.name + ' is requesting an ID game');
-		}
+		if(isRandomGame) console.log('\t' + socket.player.name + ' is requesting a random game');
+		else console.log('\t' + socket.player.name + ' is requesting an ID game');
 		gameMgr.addPlayerToGame(socket.player, data.id);
 	});
 });

@@ -1,13 +1,26 @@
-var BOARD_SIZE = [ 200, 100 ],
-	POINTS_TO_WIN = 7,
-	PADDLE_DIMENSIONS = [ 2, 10 ],
-	PADDLE_PADDING = 4,
-	PADDLE_VELOCITY = 40,
-	BALL_RADIUS = 1.5,
-	COUNTDOWN_SECONDS = 3.0,
+/* Game runs as follows once two players are reached:
+ * 	1. Main game variables sent
+ * 	2. Start sending periodic updates between clients (time & paddle location)
+ * 	3. Countdown started
+ * 	4. Determine initial ball angle and its path
+ * 	5. Send angle and path at 0.5 seconds left of countdown
+ * 	6. Determine from client 'bounce' or 'score' updates where ball goes next
+ * 	7. Repeat 6 until score
+ * 	8. If winning score reached, end game - if not, repeat 3-7
+ */
+
+var BOARD_SIZE = [ 200, 100 ], // size of board (width x height) -- allows easy scaling
+	UPDATE_INTERVAL = 50, // how often clients are to send updates
+	POINTS_TO_WIN = 7, // points to win each game
+	PADDLE_DIMENSIONS = [ 2, 10 ], // dimensions of each paddle on board
+	PADDLE_PADDING = 4, // space between side of board and each paddle
+	PADDLE_VELOCITY = 40, // speed at which paddles move
+	BALL_RADIUS = 1.5, // radius of ball
+	COUNTDOWN_SECONDS = 3.0, // length of countdown in seconds
 	COUNTDOWN_DECREMENT_STEP = 0.2,
-	BALL_START_VELOCITY = 20,
-	BALL_START_ANGLES = [ Math.PI/6, -Math.PI/6, Math.PI - Math.PI/6, Math.PI + Math.PI/6 ];
+	BALL_START_VELOCITY = 20, // velocity at which ball starts
+	BALL_VELOCITY_STEP = 1, // step size at each bounce of ball velocity
+	BALL_START_ANGLES = [ Math.PI/6, -Math.PI/6, Math.PI - Math.PI/6, Math.PI + Math.PI/6 ]; // possible angles at which ball starts for each round
 
 var getRandomId = require('./utility_functions.js').getRandomId;
 
@@ -55,6 +68,19 @@ Game.prototype.addSocketListeners = function() {
 			}).bind(this);
 		}).bind(this))());
 	}
+}
+
+/* Sends the variable details of each game to its players. (Ball radius, board size, etc.) */
+Game.prototype.sendGameDetails = function() {
+	var data = {
+		countdownLength: COUNTDOWN_SECONDS,
+		updateInterval: UPDATE_INTERVAL,
+		boardSize: BOARD_SIZE,
+		basePaddleVelocity: PADDLE_VELOCITY,
+		paddleDimensions: PADDLE_DIMENSIONS,
+		paddlePadding: PADDLE_PADDING,
+		ballRadius: BALL_RADIUS
+	};
 }
 
 /* Sends all necessary board info to player. (Dimensions, starting scores, etc.) */
@@ -169,12 +195,7 @@ Game.prototype.gameCountdown = function() {
 /* Updates the positions of the ball and player paddles. Handles collisions if there are any. */
 Game.prototype.updatePositions = function(elapsedSeconds) {
 	var newBallX = this.ballPos[0] + Math.cos(this.ballAngle) * this.ballVelocity * (BOARD_SIZE[0]/BOARD_SIZE[1]) * elapsedSeconds,
-		newBallY = this.ballPos[1] + Math.sin(this.ballAngle) * this.ballVelocity * elapsedSeconds;
-	if(newBallX - BALL_RADIUS <= PADDLE_PADDING + PADDLE_DIMENSIONS[0] / 2) { // passing left paddle
-		console.log('Ball passing LEFT');
-	} else if(newBallX + BALL_RADIUS >= BOARD_SIZE[0] - PADDLE_PADDING - PADDLE_DIMENSIONS[0] / 2) { // passing right paddle
-		console.log('Ball passing RIGHT');
-	}
+		newBallY = this.ballPos[1] - Math.sin(this.ballAngle) * this.ballVelocity * elapsedSeconds;
 	this.ballPos[0] = newBallX;
 	this.ballPos[1] = newBallY;
 	this.playerPositions[0] += this.playerVelocities[0] * elapsedSeconds;
@@ -205,13 +226,15 @@ Game.prototype.gameLoop = function() {
 		return;
 	}
 	// send game updates
-	data.playerPositions = this.playerPositions;
 	data.playerVelocities = this.playerVelocities;
 	data.ballPos = this.ballPos;
 	data.ballVelocity = this.ballVelocity;
 	data.ballAngle = this.ballAngle;
-	for(i = 0; i < this.players.length; ++i)
+	for(i = 0; i < this.players.length; ++i) {
+		// only send the other player's position
+		data.playerPositions = [ i === 0 ? null : this.playerPositions[0], i === 1 ? null : this.playerPositions[1] ];
 		this.players[i].socket.emit('game-update', data);
+	}
 
 	this.lastUpdateTime = (new Date()).getTime(); // update last update time
 	setTimeout(this.gameLoop, 50);
