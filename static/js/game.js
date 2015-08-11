@@ -36,6 +36,7 @@ function Game(details) {
 	this.ballAngle = 0;
 
 	this.timeUpdate = this.timeUpdate.bind(this);
+	this.countdown = this.countdown.bind(this);
 	this.gameLoop = this.gameLoop.bind(this);
 
 	this.timeUpdateLoop = undefined; // loop for updating time between players -- loop reset every round start
@@ -48,25 +49,23 @@ Game.prototype.addEventListeners = function() {
 	// handle key down events
 	window.onkeydown = (function(event) {
 		var keyCode = event.which || event.keyCode;
-		if(keyCode === UP_ARROW_KEY) {
+		if(keyCode === UP_ARROW_KEY && this.playerVelocities[this.playerI] !== -this.basePaddleVelocity) {
 			this.playerVelocities[this.playerI] = -this.basePaddleVelocity;
-			io.emit('movement', { direction: -1 });
-		} else if(keyCode === DOWN_ARROW_KEY) {
+			io.emit('movement-update', { direction: -1 });
+		} else if(keyCode === DOWN_ARROW_KEY && this.playerVelocities[this.playerI] !== this.basePaddleVelocity) {
 			this.playerVelocities[this.playerI] = this.basePaddleVelocity;
-			io.emit('movement', { direction: 1 });
+			io.emit('movement-update', { direction: 1 });
 		}
 	}).bind(this);
 	// handle key up events
 	window.onkeyup = (function(event) {
 		var keyCode = event.which || event.keyCode;
-		if(keyCode === UP_ARROW_KEY) {
-			console.log('Stopping movement.');
+		if(keyCode === UP_ARROW_KEY && this.playerVelocities[this.playerI] === -this.basePaddleVelocity) {
 			this.playerVelocities[this.playerI] = 0;
-			io.emit('movement', { direction: 0, position: this.playerPositions[this.playerI] });
-		} else if(keyCode === DOWN_ARROW_KEY) {
-			console.log('Stopping movement.');
+			io.emit('movement-update', { direction: 0, position: this.playerPositions[this.playerI] });
+		} else if(keyCode === DOWN_ARROW_KEY && this.playerVelocities[this.playerI] === this.basePaddleVelocity) {
 			this.playerVelocities[this.playerI] = 0;
-			io.emit('movement', { direction: 0, position: this.playerPositions[this.playerI] });
+			io.emit('movement-update', { direction: 0, position: this.playerPositions[this.playerI] });
 		}
 	}).bind(this);
 }
@@ -85,11 +84,24 @@ Game.prototype.addReceivedTime = function(time) {
 		avg += this.opponentTimes[i];
 	avg /= this.opponentTimes.length;
 	this.avgOpponentTime = avg;
-	console.log('Average opponent ping: ' + avg);
 }
 
+/* Sends out time relative to start-of-round to other player. */
 Game.prototype.timeUpdate = function() {
 	io.emit('time-update', Date.now() - this.referenceTime);
+}
+
+/* Handles new movement data from other player. */
+Game.prototype.handleMovementUpdate = function(data) {
+	var otherPlayerI = (this.playerI+1) % 2;
+	if(data.direction === -1) { // moving up
+		this.playerVelocities[otherPlayerI] = -this.basePaddleVelocity;
+	} else if(data.direction === 1) { // moving down
+		this.playerVelocities[otherPlayerI] = this.basePaddleVelocity;
+	} else if(data.direction === 0) { // stopping
+		this.playerVelocities[otherPlayerI] = 0;
+		this.playerPositions[otherPlayerI] = data.position;
+	}
 }
 
 /* Shows the game components. */
@@ -165,23 +177,42 @@ Game.prototype.startRound = function() {
 	this.updateReferenceTime();
 	clearInterval(this.timeUpdateLoop);
 	this.timeUpdateLoop = setInterval(this.timeUpdate, this.updateInterval);
+	this.countdownLeft = this.countdownLength;
 	this.countdown();
 }
 
-/* Handles the countdown. */
+/* Handles the countdown before each round. After countdown is over, goes into game loop. */
+var COUNTDOWN_STEP = 0.1;
 Game.prototype.countdown = function() {
-	var COUNTDOWN_STEP = 0.1;
-	var countdown = (function() {
-		var countdownLeft = this.countdownLength;
-		return function() {
-			countdownLeft -= COUNTDOWN_STEP;
-			this.countdownText.textContent = countdownLeft;
-			if(countdownLeft > 0) setTimeout(countdown, COUNTDOWN_STEP);
-		}
-	}).bind(this)();
-	setTimeout(countdown, COUNTDOWN_STEP);
+	if(this.countdownLeft > 0) {
+		this.countdownText.style.display = 'block';
+		this.countdownText.textContent = Math.ceil(this.countdownLeft);
+		this.countdownLeft -= COUNTDOWN_STEP;
+		setTimeout(this.countdown, COUNTDOWN_STEP*1000);
+	} else {
+		this.countdownText.style.display = 'none';
+		this.lastUpdateTime = Date.now();
+		this.gameLoop();
+	}
 }
 
 /* Main game loop. */
 Game.prototype.gameLoop = function() {
+	var secondsElapsed = (Date.now() - this.lastUpdateTime) / 1000;
+	this.updatePaddlePositions(secondsElapsed);
+	this.render();
+
+	this.lastUpdateTime = Date.now();
+	requestAnimationFrame(this.gameLoop);
+}
+
+/* Updates the paddle positions based on time elapsed. */
+Game.prototype.updatePaddlePositions = function(secondsElapsed) {
+	for(var i = 0; i < this.playerPositions.length; ++i) {
+		this.playerPositions[i] += this.playerVelocities[i] * secondsElapsed;
+		if(this.playerPositions[i] < this.paddleDimensions[1] / 2) 
+			this.playerPositions[i] = this.paddleDimensions[1] / 2;
+		else if(this.playerPositions[i] > this.boardSize[1] - this.paddleDimensions[1] / 2)
+			this.playerPositions[i] = this.boardSize[1] - this.paddleDimensions[1] / 2;
+	}
 }

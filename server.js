@@ -43,6 +43,11 @@ io.on('connection', function(socket) {
 		if(socket.player.game)
 			socket.player.game.handleTimeUpdate(socket.player, data);
 	});
+	// game movement update received
+	socket.on('movement-update', function(data) {
+		if(socket.player.game)
+			socket.player.game.handleMovementUpdate(socket.player, data);
+	});
 });
 
 // start server listening

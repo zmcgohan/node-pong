@@ -125,6 +125,7 @@ function addWindowListeners() {
 	io.on('game-ready', function(data) {
 		console.log('Game is ready.');
 		game.playerNames = data.playerNames;
+		game.playerI = data.playerI;
 		game.updateNameTexts();
 	});
 	// round is starting -- begin countdown 
@@ -134,6 +135,10 @@ function addWindowListeners() {
 	// received time update from other player
 	io.on('time-update', function(time) {
 		game.addReceivedTime(time);
+	});
+	// received new movement data from other player
+	io.on('movement-update', function(data) {
+		game.handleMovementUpdate(data);
 	});
 	// current game position updates
 	io.on('game-update', function(data) { 
