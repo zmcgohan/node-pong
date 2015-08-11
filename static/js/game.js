@@ -29,6 +29,8 @@ function Game(details) {
 	this.playerI = null; // which player is this client? 0 or 1
 	this.playerNames = [ username, '...' ];
 	this.playerPositions = [ 50, 50 ];
+	// position of player visually -- if any sudden jumps (like from lag) are made to playerPositions, this allows smooth fixing visually
+	this.boardPlayerPositions = [ 50, 50 ]; 
 	this.playerVelocities = [ 0, 0 ];
 	this.playerScores = [ 0, 0 ];
 	this.ballPos = [ 100, 50 ];
@@ -152,11 +154,13 @@ Game.prototype.drawPaddles = function() {
 	ctx.fillStyle = '#fcfcfc';
 	// draw player one's (left) paddle
 	x = paddlePaddingPx - paddleWidthPx / 2;
-	y = this.playerPositions[0] / this.boardSize[1] * canvas.height - paddleHeightPx / 2;
+	//y = this.playerPositions[0] / this.boardSize[1] * canvas.height - paddleHeightPx / 2;
+	y = this.boardPlayerPositions[0] / this.boardSize[1] * canvas.height - paddleHeightPx / 2;
 	ctx.fillRect(x, y, paddleWidthPx, paddleHeightPx);
 	// draw player two's (right) paddle
 	x = canvas.width - paddlePaddingPx - paddleWidthPx / 2;
-	y = this.playerPositions[1] / this.boardSize[1] * canvas.height - paddleHeightPx / 2;
+	//y = this.playerPositions[1] / this.boardSize[1] * canvas.height - paddleHeightPx / 2;
+	y = this.boardPlayerPositions[1] / this.boardSize[1] * canvas.height - paddleHeightPx / 2;
 	ctx.fillRect(x, y, paddleWidthPx, paddleHeightPx);
 }
 
@@ -208,11 +212,24 @@ Game.prototype.gameLoop = function() {
 
 /* Updates the paddle positions based on time elapsed. */
 Game.prototype.updatePaddlePositions = function(secondsElapsed) {
+	// update actual position of player
 	for(var i = 0; i < this.playerPositions.length; ++i) {
 		this.playerPositions[i] += this.playerVelocities[i] * secondsElapsed;
 		if(this.playerPositions[i] < this.paddleDimensions[1] / 2) 
 			this.playerPositions[i] = this.paddleDimensions[1] / 2;
 		else if(this.playerPositions[i] > this.boardSize[1] - this.paddleDimensions[1] / 2)
 			this.playerPositions[i] = this.boardSize[1] - this.paddleDimensions[1] / 2;
+	}
+	// update visual location of paddles
+	for(i = 0; i < this.boardPlayerPositions.length; ++i) {
+		if(this.boardPlayerPositions[i] < this.playerPositions[i]) {
+			this.boardPlayerPositions[i] += this.playerVelocities[i] * secondsElapsed;
+			if(this.boardPlayerPositions[i] > this.playerPositions[i]) // overshot the change -- make them equal
+				this.boardPlayerPositions[i] = this.playerPositions[i];
+		} else if(this.boardPlayerPositions[i] > this.playerPositions[i]) {
+			this.boardPlayerPositions[i] += this.playerVelocities[i] * secondsElapsed;
+			if(this.boardPlayerPositions[i] < this.playerPositions[i]) // overshot the change -- make them equal
+				this.boardPlayerPositions[i] = this.playerPositions[i];
+		}
 	}
 }
