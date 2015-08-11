@@ -1,4 +1,4 @@
-var SERVER_PORT = 3000;
+var SERVER_PORT = process.argv[2] || 3000;
 
 var express = require('express'),
 	app = express(),
