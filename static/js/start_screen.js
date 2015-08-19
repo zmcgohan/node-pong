@@ -6,6 +6,8 @@ function StartScreen() {
 	this.playFriendButton = document.getElementById('playFriendButton');
 	this.bottomLeftFooter = document.getElementById('bottomLeftFooter');
 	this.bottomRightFooter = document.getElementById('bottomRightFooter');
+	this.gameIDInputContainer = document.getElementById('gameIDInputContainer');
+	this.gameIDInput = document.getElementById('gameIDInput');
 
 	// vertically center
 	//this.container.height = this.container.offsetHeight;
@@ -21,7 +23,17 @@ StartScreen.prototype.addEventListeners = function() {
 	}).bind(this);
 	// allow for creation or joining of an ID'ed game
 	this.playFriendButton.onclick = (function() {
-		requestGame('zmcgohan');
+		this.gameIDInputContainer.style.display = 'block';
+		this.gameIDInput.focus();
+	}).bind(this);
+	// on enter of game ID input, request game
+	this.gameIDInput.onkeydown = (function(event) {
+		var which = event.which || event.keyCode;
+		console.log(which);
+		if(event.which === 13) { // enter pressed
+			event.preventDefault();
+			requestGame(this.gameIDInput.textContent);
+		}
 	}).bind(this);
 	// allow changing of username
 	this.usernameChangeButton.onclick = (function() {

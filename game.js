@@ -7,19 +7,22 @@
  * 	6. Determine from client 'bounce' or 'score' updates where ball goes next
  * 	7. Repeat 6 until score
  * 	8. If winning score reached, end game - if not, repeat 2-7
+ *
+ * NOTE: Ball angle must be between 0 <= ballAngle < 2*Math.PI
  */
 
 var BOARD_SIZE = [ 200, 100 ], // size of board (width x height) -- allows easy scaling
-	UPDATE_INTERVAL = 2000, // how often clients are to send updates
-	POINTS_TO_WIN = 7, // points to win each game
+	UPDATE_INTERVAL = 100, // how often clients are to send updates
+	POINTS_TO_WIN = 1, // points to win each game
 	PADDLE_DIMENSIONS = [ 2, 10 ], // dimensions of each paddle on board
 	PADDLE_PADDING = 4, // space between side of board and each paddle
 	PADDLE_VELOCITY = 40, // speed at which paddles move
 	BALL_RADIUS = 1.5, // radius of ball
 	COUNTDOWN_SECONDS = 3.0, // length of countdown in seconds
-	BALL_START_VELOCITY = 20, // velocity at which ball starts
-	BALL_VELOCITY_STEP = 1, // step size at each bounce of ball velocity
-	BALL_START_ANGLES = [ Math.PI/6, -Math.PI/6, Math.PI - Math.PI/6, Math.PI + Math.PI/6 ]; // possible angles at which ball starts for each round
+	BALL_START_VELOCITY = 40, // velocity at which ball starts
+	BALL_VELOCITY_STEP = 5, // step size at each bounce of ball velocity
+	//BALL_START_ANGLES = [ Math.PI/6, 2*Math.PI - Math.PI / 6, Math.PI - Math.PI/6, Math.PI + Math.PI/6 ]; // possible angles at which ball starts for each round
+	BALL_START_ANGLES = [ 0, Math.PI ];
 
 var getRandomId = require('./utility_functions.js').getRandomId;
 
@@ -27,6 +30,7 @@ var getRandomId = require('./utility_functions.js').getRandomId;
 function Game() {
 	this.players = [];
 	this.playerScores = [ 0, 0 ];
+	this.playerScoreUpdate = [ 0, 0 ];
 	this.playerPositions = [ 50, 50 ];
 	this.playerVelocities = [ 0, 0 ];
 	this.ballPos = [ 100, 50 ];
@@ -70,7 +74,9 @@ Game.prototype.sendGameDetails = function(player) {
 		basePaddleVelocity: PADDLE_VELOCITY,
 		paddleDimensions: PADDLE_DIMENSIONS,
 		paddlePadding: PADDLE_PADDING,
-		ballRadius: BALL_RADIUS
+		ballRadius: BALL_RADIUS,
+		ballStartVelocity: BALL_START_VELOCITY,
+		ballVelocityStep: BALL_VELOCITY_STEP
 	};
 	player.socket.emit('game-details', data);
 }
@@ -80,6 +86,7 @@ Game.prototype.handleDisconnectedPlayer = function(player) {
 	this.players.splice(this.getPlayerI(player), 1);
 	if(this.players.length > 0) {
 		console.log(player.name + ' quit the game against ' + this.players[0].name);
+		this.gameOver = true;
 		this.players[0].socket.emit('player-quit-game-end', null);
 	}
 }
@@ -87,7 +94,8 @@ Game.prototype.handleDisconnectedPlayer = function(player) {
 /* Handles a received time update from players. */
 Game.prototype.handleTimeUpdate = function(player, time) {
 	var otherPlayerI = (this.getPlayerI(player) + 1) % 2;
-	this.players[otherPlayerI].socket.emit('time-update', time);
+	if(this.players[otherPlayerI])
+		this.players[otherPlayerI].socket.emit('time-update', time);
 }
 
 /* Handle a movement update. */
@@ -107,6 +115,33 @@ Game.prototype.handleMovementUpdate = function(player, data) {
 	this.players[otherPlayerI].socket.emit('movement-update', sendData);
 }
 
+/* Handles ball bounces. */
+Game.prototype.handleBallHit = function(player, data) {
+	var playerI = this.getPlayerI(player),
+		otherPlayerI = (playerI+1) % 2;
+	this.ballVelocity += BALL_VELOCITY_STEP;
+	data.velocity = this.ballVelocity;
+	this.players[otherPlayerI].socket.emit('ball-hit', data);
+}
+
+/* Handles a score. */
+var SCORE_WAIT_TIME = 800;
+Game.prototype.handleScore = function(player, data) {
+	var playerI = this.getPlayerI(player),
+		i;
+	this.playerScoreUpdate[playerI] = Date.now();
+	if(Date.now() - this.playerScoreUpdate[0] < SCORE_WAIT_TIME && Date.now() - this.playerScoreUpdate[1] < SCORE_WAIT_TIME) {
+		++this.playerScores[data.player];
+		for(i = 0; i < this.players.length; ++i)
+			this.players[i].socket.emit('player-scored', { playerScores: this.playerScores });
+		if(this.playerScores[data.player] >= POINTS_TO_WIN) {
+			this.gameOver = true;
+			for(i = 0; i < this.players.length; ++i)
+				this.players[i].socket.emit('player-won', { player: data.player });
+		} else this.startRound();
+	}
+}
+
 /* Handles a received game update from players. */
 Game.prototype.handleUpdate = function(player, data) {
 	console.log('Received update from ' + player.name);
@@ -114,9 +149,10 @@ Game.prototype.handleUpdate = function(player, data) {
 
 /* Starts each round, beginning with a countdown. */
 Game.prototype.startRound = function() {
-	var i;
+	var i, data;
+	data = { ballAngle: BALL_START_ANGLES[Math.floor(Math.random() * BALL_START_ANGLES.length)] };
 	for(i = 0; i < this.players.length; ++i)
-		this.players[i].socket.emit('round-start', null);
+		this.players[i].socket.emit('round-start', data);
 }
 
 exports.Game = Game;

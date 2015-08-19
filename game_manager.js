@@ -11,11 +11,13 @@ function GameManager() {
 GameManager.prototype.addPlayerToGame = function(player, id) {
 	var game;
 	if(!id) { // no ID given -- random game
+		id = this.currentRandomId;
 		game = this.games[this.currentRandomId];
 	} else { // ID'ed game -- if not already created, create it; else join it
 		if(!this.games[id]) this.games[id] = new Game();
 		game = this.games[id];
 	}
+	if(this.games[id].gameOver) this.games[id] = game = new Game();
 	game.addPlayer(player);
 	console.log(player.name + ' added to game ID ' + (!id ? this.currentRandomId : id));
 	if(!id && game.players.length === 2) { // last random game have enough players? make new one

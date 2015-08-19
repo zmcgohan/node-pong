@@ -130,7 +130,8 @@ function addWindowListeners() {
 	});
 	// round is starting -- begin countdown 
 	io.on('round-start', function(data) {
-		game.startRound();
+		console.log('Round started');
+		game.startRound(data.ballAngle);
 	});
 	// received time update from other player
 	io.on('time-update', function(time) {
@@ -140,13 +141,45 @@ function addWindowListeners() {
 	io.on('movement-update', function(data) {
 		game.handleMovementUpdate(data);
 	});
+	// received ball hit data
+	io.on('ball-hit', function(data) {
+		game.handleBallHit(data);
+	});
+	// received score
+	io.on('player-scored', function(data) {
+		console.log('Player scored');
+		game.playerScores = data.playerScores;
+		game.updateScoreTexts();
+	});
+	// player has won the game
+	io.on('player-won', function(data) {
+		console.log('Player ' + data.player + ' won');
+		game.gameOver = true;
+		game.countdownText.style.fontSize = '175%';
+		game.countdownText.style.display = 'block';
+		game.countdownText.textContent = game.playerNames[data.player] + ' won';
+		clearInterval(game.timeUpdateLoop);
+		setTimeout(function() {
+			game.hide();
+			game = null;
+			startScreen.show();
+		}, 2000);
+	});
 	// current game position updates
 	io.on('game-update', function(data) { 
 	});
 	io.on('player-quit-game-end', function(data) {
 		console.log('Other player quit. Game over.');
-		game.hide();
-		startScreen.show();
+		game.gameOver = true;
+		game.countdownText.style.fontSize = '175%';
+		game.countdownText.style.display = 'block';
+		game.countdownText.textContent = game.playerNames[(1+game.playerI)%2] + ' quit';
+		clearInterval(game.timeUpdateLoop);
+		setTimeout(function() {
+			game.hide();
+			game = null;
+			startScreen.show();
+		}, 2000);
 	});
 }
 

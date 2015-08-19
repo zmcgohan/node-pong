@@ -48,6 +48,16 @@ io.on('connection', function(socket) {
 		if(socket.player.game)
 			socket.player.game.handleMovementUpdate(socket.player, data);
 	});
+	// ball hit update received
+	socket.on('ball-hit', function(data) {
+		if(socket.player.game)
+			socket.player.game.handleBallHit(socket.player, data);
+	});
+	// player scored
+	socket.on('player-scored', function(data) {
+		if(socket.player.game)
+			socket.player.game.handleScore(socket.player, data);
+	});
 });
 
 // start server listening
