@@ -32,6 +32,7 @@ StartScreen.prototype.addEventListeners = function() {
 		console.log(which);
 		if(event.which === 13) { // enter pressed
 			event.preventDefault();
+			this.gameIDInputContainer.style.display = 'none';
 			requestGame(this.gameIDInput.textContent);
 		}
 	}).bind(this);

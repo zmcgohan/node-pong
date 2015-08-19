@@ -285,6 +285,7 @@ Game.prototype.gameLoop = function() {
 	var radiusY = this.ballRadius * (this.boardSize[1] / this.boardSize[0]);
 	if(ballPos[0] - this.ballRadius <= this.paddlePadding + this.paddleDimensions[0] / 2
 			&& this.ballPos[0] - this.ballRadius > this.paddlePadding + this.paddleDimensions[0] / 2) { // passing left paddle
+		this.lastBallHitTime = Date.now();
 		var timeToHit = ((this.ballPos[0] - this.ballRadius) - (this.paddlePadding + this.paddleDimensions[0] / 2)) / this.ballVelocity,
 			ballPosAtHit = this.getBallPos(Date.now() + timeToHit);
 			paddlePosAtHit = this.playerPositions[0] + this.playerVelocities[0]*timeToHit;
@@ -296,13 +297,13 @@ Game.prototype.gameLoop = function() {
 				newAngle = (2*Math.PI - percentDistance * MAX_BOUNCE_ANGLE) % (2*Math.PI);
 			this.ballAngle = newAngle;
 			this.ballVelocity += this.ballVelocityStep;
-			this.lastBallHitTime = Date.now();
 			this.getBallPos = this.getBallPathFunc(newAngle, ballPosAtHit[0], ballPosAtHit[1], this.ballVelocity, this.lastBallHitTime);
 			if(this.playerI === 0)
 				io.emit('ball-hit', { pos: ballPosAtHit, angle: newAngle });
 		}
 	} else if(ballPos[0] + this.ballRadius >= this.boardSize[0] - this.paddlePadding - this.paddleDimensions[0] / 2
 			&& this.ballPos[0] + this.ballRadius < this.boardSize[0] - this.paddlePadding - this.paddleDimensions[0] / 2) { // passing right paddle
+		this.lastBallHitTime = Date.now();
 		var timeToHit = ((this.boardSize[0] - this.paddlePadding - this.paddleDimensions[0] / 2) - (this.ballPos[0] + this.ballRadius)) / this.ballVelocity,
 			ballPosAtHit = this.getBallPos(Date.now() + timeToHit);
 			paddlePosAtHit = this.playerPositions[1] + this.playerVelocities[1]*timeToHit;
@@ -314,7 +315,6 @@ Game.prototype.gameLoop = function() {
 				newAngle = Math.PI + percentDistance * MAX_BOUNCE_ANGLE;
 			this.ballAngle = newAngle;
 			this.ballVelocity += this.ballVelocityStep;
-			this.lastBallHitTime = Date.now();
 			this.getBallPos = this.getBallPathFunc(newAngle, ballPosAtHit[0], ballPosAtHit[1], this.ballVelocity, this.lastBallHitTime);
 			if(this.playerI === 1)
 				io.emit('ball-hit', { pos: ballPosAtHit, angle: newAngle });
